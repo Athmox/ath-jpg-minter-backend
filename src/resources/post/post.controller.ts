@@ -28,6 +28,8 @@ class PostController implements Controller {
         next: NextFunction
     ): Promise<Response | void> => {
         try {
+            console.log("HI");
+
             const { title, body } = req.body;
 
             const post = await this.PostService.create(title, body);
