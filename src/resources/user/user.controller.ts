@@ -46,7 +46,9 @@ class UserController implements Controller {
 
             res.status(201).json({ token });
         } catch (error) {
-            next(new HttpException(400, error.message));
+            if (error instanceof Error) {
+                next(new HttpException(400, error.message));
+            }
         }
     };
 
@@ -62,7 +64,9 @@ class UserController implements Controller {
 
             res.status(200).json({ token });
         } catch (error) {
-            next(new HttpException(400, error.message));
+            if (error instanceof Error) {
+                next(new HttpException(400, error.message));
+            }
         }
     };
 

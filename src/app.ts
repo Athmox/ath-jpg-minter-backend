@@ -41,10 +41,10 @@ class App {
     }
 
     private initialiseDatabaseConnection(): void {
-        const { MONGO_USER, MONGO_PASSWORD, MONGO_PATH } = process.env;
-
+        const { MONGO_USER, MONGO_PASSWORD, MONGO_URL, MONGO_DATABASE, MONGO_AUTH_MECHANISM, MONGO_AUTH_DATABASE} = process.env;
+        
         mongoose.connect(
-            `mongodb://${MONGO_USER}:${MONGO_PASSWORD}${MONGO_PATH}`
+            `mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_URL}/${MONGO_DATABASE}?authMechanism=${MONGO_AUTH_MECHANISM}&authSource=${MONGO_AUTH_DATABASE}`
         );
     }
 

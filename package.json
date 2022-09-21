@@ -1,5 +1,5 @@
 {
-  "name": "nodejs-api-from-scratch",
+  "name": "ath-jpg-minter-backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -11,7 +11,7 @@
     "postinstall": "npm run build"
   },
   "keywords": [],
-  "author": "",
+  "author": "Athmox",
   "license": "ISC",
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",
