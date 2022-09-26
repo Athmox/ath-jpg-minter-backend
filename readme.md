@@ -7,7 +7,7 @@ Later on a frontend part is planned, where a user can easily interact with the b
 - ExpressJS
 - nodeJS
 
-## Starting MongoDB
+## Starting MongoDB on MAC OS
 It often happens that MongoDB does not get started with startup. For this reason we have to start it manually.
 
 `brew services`<br/>

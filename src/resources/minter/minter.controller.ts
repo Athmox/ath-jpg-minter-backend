@@ -25,6 +25,10 @@ export class MinterController implements Controller {
             `${this.path}/stopListener`,
             this.stopListener
         );
+        this.router.post(
+            `${this.path}/mintNft`,
+            this.mintNft
+        );
     }
 
     private getBlockNumber = async (
@@ -69,6 +73,24 @@ export class MinterController implements Controller {
             res.status(201).json({ "test-gestoppt": true });
         } catch (error) {
             next(new HttpException(400, 'Cannot create request'));
+        }
+    };
+
+    private mintNft = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<Response | void> => {
+        try {
+            console.log("HI");
+
+            const { walletPrivateKey, contractAddress, contractMethodHex, price, gasLimit } = req.body;
+
+            await this.minterService.mintNFT(walletPrivateKey, contractAddress, contractMethodHex, price, gasLimit);
+
+            res.status(201).json({ succes: true });
+        } catch (error) {
+            next(new HttpException(400, 'Cannot create post'));
         }
     };
 }
