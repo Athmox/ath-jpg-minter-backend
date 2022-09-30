@@ -1,109 +1,84 @@
-import { ethers, providers, Wallet } from 'ethers';
+import { BigNumber, ethers, providers, Wallet } from 'ethers';
+import { MintData } from './minter.model';
 
 class MinterService {
 
     // Elias Node MAINNET
-    // provider = new providers.JsonRpcProvider("https://connect.deltaoutpost.io/mainnet/2i6f1nn21jjq");
-    // provider = new providers.JsonRpcProvider("https://eth-mainnet.alchemyapi.io/v2/Il9ArCAii0Je4em_h86S98925ApXnqeS");
+    // provider = new providers.WebSocketProvider("wss://connect.deltaoutpost.io/mainnet/2i6f1nn21jjq");
+    provider = new providers.WebSocketProvider("wss://eth-mainnet.alchemyapi.io/v2/Il9ArCAii0Je4em_h86S98925ApXnqeS");
+    // provider = new providers.WebSocketProvider(`wss://falling-autumn-theorem.discover.quiknode.pro/3fa3a0696a7334ecdf91c3bbfce1417f45f5c4f8/`);
     
+
     // Markus NODE GUARLI
-    provider = new providers.WebSocketProvider(`wss://virulent-damp-frog.ethereum-goerli.discover.quiknode.pro/1255b041b365c785e2e0dc6b2f2b77280c1f1724/`);
+    // provider = new providers.WebSocketProvider(`wss://virulent-damp-frog.ethereum-goerli.discover.quiknode.pro/1255b041b365c785e2e0dc6b2f2b77280c1f1724/`);
 
-    async getBlockNumber() {
-        return await this.provider.getBlockNumber();
-    }
 
-    public async test() {
-
-        this.provider.on('block', (blockNumber) => {
-            console.log(blockNumber);
-
-        });
-    }
 
     public async stopListener() {
         this.provider.removeAllListeners();
     }
 
-    public async mintNFT(walletPrivateKey: string, contractAddress: string, contractMethodHex: string, price: string, gasLimit: string) {
+    public async mintNFT(mintData: MintData) {
+
+
+        // TODO: 
+        // Postrequest mintFunctionHex umbenennen auf openContractMethodHex
+        // contractMethodHex umbenennen auf mintFunctionHex
 
         try {
+            console.log("Started listening", new Date().toLocaleTimeString());
 
-            console.log("Started listening");
+            const wallet = await this.getWallet(mintData.walletPrivateKey);
 
             this.provider.on("pending", async (tx) => {
-                this.provider.getTransaction(tx).then(transaction => {
-                    if(transaction.to === contractAddress) {
-                        console.log(transaction);
+                this.provider.getTransaction(tx).then(developerTransaction => {
+                    if (developerTransaction?.to === mintData.contractAddress && developerTransaction?.data === mintData.mintFunctionHex) {
+                        console.log(developerTransaction);
+                        const maxPriorityFeePerGas = developerTransaction.maxPriorityFeePerGas;
+                        const maxFeePerGas = developerTransaction.maxFeePerGas;
+
+                        if (!maxPriorityFeePerGas) {
+                            throw new Error("Max-Priority-Fee-Per-Gas could not be extracted. Aborting...");
+                        } if (!maxFeePerGas) {
+                            throw new Error("Max-Fee-Per-Gas could not be extracted. Aborting...");
+                        }
+
+                        this.sendTransaction(mintData, maxPriorityFeePerGas, maxFeePerGas, wallet);
                     }
                 });
             });
-
-
-
-            // contract.on("Transfer", (from, to, tokenId, event) => {
-            //     console.log("Transfer");
-            //     const info = {
-            //         from,
-            //         to,
-            //         tokenId,
-            //         event
-            //     }
-            //     console.log("Event Result: ", info);
-            //     this.getEventProperties(event);
-            // });
-
-
-
-
-            // const wallet = await this.getWallet(walletPrivateKey);
-            // const nonce = await this.getNonce(wallet);
-            // const gasPrice = (await this.getCurrentGasPrice()).gasPrice;
-
-            // if (!gasPrice) {
-            //     throw new Error("No Gas Price could be calculated");
-            // }
-
-            // console.log("Before transaction");
-
-            // console.log("Gas Price", gasPrice.toNumber());
-
-            // console.log("Gas Price", ethers.utils.formatUnits(gasPrice, "gwei"));
-
-            // const transaction = await wallet.sendTransaction({
-            //     to: contractAddress,
-            //     value: ethers.utils.parseEther(price),
-            //     data: contractMethodHex,
-            //     gasLimit: gasLimit,
-            //     gasPrice: gasPrice,
-            //     nonce: nonce
-            // });
-
-            // console.log("After transaction");
-
-            // const receipt = await transaction.wait();
-
-            // if(receipt) {
-            //     console.log("Success");
-            //     console.log(receipt);
-            // } else {
-            //     console.log("Error");
-            // }
-
-            // console.log("finished");
-
-
         } catch (error) {
             console.log(error);
-
         }
-
     }
 
-    private async getEventProperties(event: any) {
+    private async sendTransaction(mintData: MintData, maxPriorityFeePerGas: BigNumber, maxFeePerGas: BigNumber, wallet: Wallet) {
 
-        console.log("getTransaction", await event.getTransaction());
-        console.log("getTransactionReceipt", await event.getTransactionReceipt());
+        console.log("Sending Transaction", new Date().toLocaleTimeString());
+
+        const transaction = await wallet.sendTransaction({
+            to: mintData.contractAddress,
+            value: ethers.utils.parseEther(mintData.price),
+            data: mintData.contractMethodHex,
+            gasLimit: mintData.gasLimit,
+            maxPriorityFeePerGas: maxPriorityFeePerGas,
+            maxFeePerGas: maxFeePerGas,
+        });
+        // nonce: await this.getNonce(wallet)
+        // gasPrice: gasPrice,
+
+        console.log("Transaction successfully sent. Waiting for receipt...", new Date().toLocaleTimeString());
+
+        const receipt = await transaction.wait();
+
+        if (receipt) {
+            console.log("Transaction was a success.");
+            console.log(receipt);
+        } else {
+            console.log("There was an error with the transaction...");
+        }
+
+        return Promise.resolve();
     }
 
     private async getWallet(walletPrivateKey: string) {
@@ -111,9 +86,6 @@ class MinterService {
     }
     private async getNonce(wallet: ethers.Wallet) {
         return (await wallet).getTransactionCount();
-    }
-    private async getCurrentGasPrice() {
-        return (await this.provider.getFeeData());
     }
 
 }
