@@ -1,8 +1,9 @@
 export interface MintData {
     walletPrivateKey: string,
     contractAddress: string,
-    contractMethodHex: string,
+    contractOwnerAddress: string,
+    mintFunctionHex: string,
     price: string,
     gasLimit: string,
-    mintFunctionHex: string
+    enableMintingMethodHex: string
 }

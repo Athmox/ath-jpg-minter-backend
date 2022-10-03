@@ -45,9 +45,9 @@ export class MinterController implements Controller {
         next: NextFunction
     ): Promise<Response | void> => {
         try {
-            const { walletPrivateKey, contractAddress, contractMethodHex, price, gasLimit, mintFunctionHex } = req.body;
+            const { walletPrivateKey, contractAddress, contractOwnerAddress, mintFunctionHex, price, gasLimit, enableMintingMethodHex } = req.body;
 
-            if (!walletPrivateKey || !contractAddress || !contractMethodHex || !price || !gasLimit || !mintFunctionHex) {
+            if (!walletPrivateKey || !contractAddress || !mintFunctionHex || !price || !gasLimit || !enableMintingMethodHex) {
                 
                 res.status(400).json({ errorMessage: "Cannot start listening, because not all parameters are set!" });
             } else {
@@ -55,10 +55,11 @@ export class MinterController implements Controller {
                 const mintData: MintData = {
                     walletPrivateKey,
                     contractAddress,
-                    contractMethodHex,
+                    contractOwnerAddress,
+                    mintFunctionHex,
                     price,
                     gasLimit,
-                    mintFunctionHex
+                    enableMintingMethodHex
                 }
 
                 this.minterService.mintNFT(mintData);
