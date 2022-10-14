@@ -15,7 +15,9 @@ class App {
         this.express = express();
         this.port = port;
 
-        this.initialiseDatabaseConnection();
+        // TODO: May be used for the future when needed.
+        // this.initialiseDatabaseConnection();
+        
         this.initialiseMiddleware();
         this.initialiseControllers(controllers);
         this.initialiseErrorHandling();

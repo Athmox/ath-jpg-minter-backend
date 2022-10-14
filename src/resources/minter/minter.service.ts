@@ -5,12 +5,10 @@ import walletPrivateKeysJson from '../../../wallet-private-keys.json';
 class MinterService {
 
     // Elias Node MAINNET
-    // provider = new providers.WebSocketProvider("wss://connect.deltaoutpost.io/mainnet/2i6f1nn21jjq");
     provider = new providers.WebSocketProvider("wss://eth-mainnet.alchemyapi.io/v2/Il9ArCAii0Je4em_h86S98925ApXnqeS");
-    // provider = new providers.WebSocketProvider(`wss://falling-autumn-theorem.discover.quiknode.pro/3fa3a0696a7334ecdf91c3bbfce1417f45f5c4f8/`);
 
-    // Markus NODE GUARLI
-    // provider = new providers.WebSocketProvider(`wss://virulent-damp-frog.ethereum-goerli.discover.quiknode.pro/1255b041b365c785e2e0dc6b2f2b77280c1f1724/`);
+    // Localhost
+    // provider = new providers.IpcProvider(`TODO`);
 
     public async stopListener() {
         this.provider.removeAllListeners();
@@ -19,6 +17,7 @@ class MinterService {
     public async mintNFT(mintData: MintData) {
 
         try {
+
             console.log("Start creating wallets", new Date().toLocaleTimeString());
 
             const walletPrivateKeys: string[] = walletPrivateKeysJson;
@@ -31,12 +30,38 @@ class MinterService {
 
             console.log("Wallets created. Starting with listening...", new Date().toLocaleTimeString());
 
+            this.provider.removeAllListeners();
+
+            let prov2 = 1;
+
+            // this.provider2.on("pending", async (tx) => {
+                
+                //     console.log("2: ", prov2);
+                
+                //     prov2 = prov2 + 1;
+            // });
+
+            let prov1 = 0;
+            
             this.provider.on("pending", async (tx) => {
-                this.provider.getTransaction(tx).then(developerTransaction => {
+
+                // prov1 = prov1 + 1;
+
+                // console.log("1: ", prov1);
+
+                console.log(tx.hash);
+
+                // sometimes only identifier is send and sometimes full tx.
+                // header is send with websockets, full tx is send with jsonRpcProvider
+
+                /* this.provider.getTransaction(tx).then(developerTransaction => {
+                    console.log(developerTransaction);
                     if (developerTransaction?.to === mintData.contractAddress
                         && developerTransaction?.from === mintData.contractOwnerAddress
                         && developerTransaction?.data === mintData.enableMintingMethodHex) {
-                        console.log(developerTransaction);
+                        
+
+                        this.provider.removeAllListeners();
                         const maxPriorityFeePerGas = developerTransaction.maxPriorityFeePerGas;
                         const maxFeePerGas = developerTransaction.maxFeePerGas;
 
@@ -46,9 +71,9 @@ class MinterService {
                             throw new Error("Max-Fee-Per-Gas could not be extracted. Aborting...");
                         }
 
-                        this.sendTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets);
+                         this.sendTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets);
                     }
-                });
+                }); */
             });
         } catch (error) {
             console.log(error);
