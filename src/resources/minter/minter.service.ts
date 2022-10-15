@@ -1,17 +1,26 @@
-import { BigNumber, ethers, providers, Wallet } from 'ethers';
 import { MintData } from './minter.model';
 import walletPrivateKeysJson from '../../../wallet-private-keys.json';
+import Web3 from 'web3';
+
+export interface WalletData {
+    walletAddress: string,
+    walletPrivateKey: string
+}
 
 class MinterService {
 
     // Elias Node MAINNET
-    provider = new providers.WebSocketProvider("wss://eth-mainnet.alchemyapi.io/v2/Il9ArCAii0Je4em_h86S98925ApXnqeS");
+    // alchemyProvider = new providers.WebSocketProvider("wss://eth-mainnet.alchemyapi.io/v2/Il9ArCAii0Je4em_h86S98925ApXnqeS");
 
     // Localhost
-    // provider = new providers.IpcProvider(`TODO`);
+    web3Provider = new Web3(new Web3.providers.IpcProvider(`/var/lib/geth/geth.ipc`, require('net')));
 
     public async stopListener() {
-        this.provider.removeAllListeners();
+        this.web3Provider.eth.clearSubscriptions(function (error, result) {
+            if (error) {
+                console.log(error);
+            }
+        });
     }
 
     public async mintNFT(mintData: MintData) {
@@ -20,109 +29,93 @@ class MinterService {
 
             console.log("Start creating wallets", new Date().toLocaleTimeString());
 
-            const walletPrivateKeys: string[] = walletPrivateKeysJson;
+            const wallets: WalletData[] = walletPrivateKeysJson;
 
-            if (!walletPrivateKeys || walletPrivateKeys.length === 0) {
-                throw new Error("There are no wallet private Keys supplied. See readme!");
+            if (!wallets || wallets.length === 0) {
+                throw new Error("There are no wallets supplied. See readme!");
             }
-
-            const wallets = await this.getWallets(walletPrivateKeys);
 
             console.log("Wallets created. Starting with listening...", new Date().toLocaleTimeString());
 
-            this.provider.removeAllListeners();
+            this.web3Provider.eth.subscribe('pendingTransactions', function (error, result) {
+                if (error) {
+                    console.log(error);
+                }
+            }).on("data", (txHash) => {
 
-            let prov2 = 1;
+                this.web3Provider.eth.getTransaction(txHash).then(fullTransaction => {
 
-            // this.provider2.on("pending", async (tx) => {
-                
-                //     console.log("2: ", prov2);
-                
-                //     prov2 = prov2 + 1;
-            // });
+                    if (fullTransaction?.to === mintData.contractAddress
+                        && fullTransaction?.from === mintData.contractOwnerAddress
+                        && fullTransaction?.input === mintData.enableMintingMethodHex) {
 
-            let prov1 = 0;
-            
-            this.provider.on("pending", async (tx) => {
+                        console.log(fullTransaction, new Date());
 
-                // prov1 = prov1 + 1;
+                        this.web3Provider.eth.clearSubscriptions(function (error, result) {
+                            if (error) {
+                                console.log(error);
+                            }
+                        });
 
-                // console.log("1: ", prov1);
+                        const maxPriorityFeePerGas = fullTransaction.maxPriorityFeePerGas;
+                        const maxFeePerGas = fullTransaction.maxFeePerGas;
 
-                console.log(tx.hash);
-
-                // sometimes only identifier is send and sometimes full tx.
-                // header is send with websockets, full tx is send with jsonRpcProvider
-
-                /* this.provider.getTransaction(tx).then(developerTransaction => {
-                    console.log(developerTransaction);
-                    if (developerTransaction?.to === mintData.contractAddress
-                        && developerTransaction?.from === mintData.contractOwnerAddress
-                        && developerTransaction?.data === mintData.enableMintingMethodHex) {
-                        
-
-                        this.provider.removeAllListeners();
-                        const maxPriorityFeePerGas = developerTransaction.maxPriorityFeePerGas;
-                        const maxFeePerGas = developerTransaction.maxFeePerGas;
-
-                        if (!maxPriorityFeePerGas) {
+                        if (typeof maxPriorityFeePerGas != 'string') {
                             throw new Error("Max-Priority-Fee-Per-Gas could not be extracted. Aborting...");
-                        } if (!maxFeePerGas) {
+                        } if (typeof maxFeePerGas != 'string') {
                             throw new Error("Max-Fee-Per-Gas could not be extracted. Aborting...");
                         }
 
-                         this.sendTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets);
+                        this.sendTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets);
                     }
-                }); */
+                });
             });
         } catch (error) {
             console.log(error);
         }
     }
 
-    private async sendTransactions(mintData: MintData, maxPriorityFeePerGas: BigNumber, maxFeePerGas: BigNumber, wallets: Wallet[]) {
+    private async sendTransactions(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallets: WalletData[]) {
         for (let wallet of wallets) {
             this.sendTransaction(mintData, maxPriorityFeePerGas, maxFeePerGas, wallet);
         }
     }
 
-    private async sendTransaction(mintData: MintData, maxPriorityFeePerGas: BigNumber, maxFeePerGas: BigNumber, wallet: Wallet) {
+    private async sendTransaction(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallet: WalletData) {
 
-        console.log("Sending Transaction", wallet.getAddress(), new Date().toLocaleTimeString());
+        console.log("Start signing tx", wallet.walletAddress, new Date());
 
-        const transaction = await wallet.sendTransaction({
-            to: mintData.contractAddress,
-            data: mintData.mintFunctionHex,
-            value: ethers.utils.parseEther(mintData.price),
-            gasLimit: mintData.gasLimit,
-            maxPriorityFeePerGas: maxPriorityFeePerGas,
-            maxFeePerGas: maxFeePerGas,
-        });
+        const signedTransaction = await this.web3Provider.eth.accounts.signTransaction(
+            {
+                to: mintData.contractAddress,
+                data: mintData.mintFunctionHex,
+                value: this.web3Provider.utils.toWei(mintData.price, 'ether'),
+                gas: mintData.gasLimit,
+                maxPriorityFeePerGas: maxPriorityFeePerGas,
+                maxFeePerGas: maxFeePerGas
+            }, wallet.walletPrivateKey
+            );
+            /* maxPriorityFeePerGas: maxPriorityFeePerGas,
+            maxFeePerGas: maxFeePerGas, */
 
-        console.log("Transaction successfully sent. Waiting for receipt...", wallet.getAddress(), new Date().toLocaleTimeString());
+        if (typeof signedTransaction.rawTransaction != 'string') {
+            throw new Error("Could not sign tx. Aborting...");
+        }
 
-        const receipt = await transaction.wait();
+        console.log("Tx signed", wallet.walletAddress, new Date());
+
+        console.log("Sending tx... Waiting for receipt...", wallet.walletAddress, new Date());
+
+        const receipt = await this.web3Provider.eth.sendSignedTransaction(signedTransaction.rawTransaction);
 
         if (receipt) {
-            console.log("Transaction was a success.", wallet.getAddress(), new Date().toLocaleTimeString());
+            console.log("Transaction was a success.", wallet.walletAddress, new Date());
             console.log(receipt);
         } else {
-            console.log("There was an error with the transaction...", wallet.getAddress(), new Date().toLocaleTimeString());
+            console.log("There was an error with the transaction...", wallet.walletAddress, new Date());
         }
 
         return Promise.resolve();
-    }
-
-    private async getWallets(walletPrivateKeys: string[]): Promise<ethers.Wallet[]> {
-        const wallets: ethers.Wallet[] = [];
-        for (let walletPrivateKey of walletPrivateKeys) {
-            wallets.push(await this.getWallet(walletPrivateKey));
-        }
-        return wallets;
-    }
-
-    private async getWallet(walletPrivateKey: string): Promise<ethers.Wallet> {
-        return new ethers.Wallet(walletPrivateKey, this.provider);
     }
 
 }

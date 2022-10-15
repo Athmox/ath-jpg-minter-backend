@@ -5,7 +5,15 @@ Later on a frontend part is planned, where a user can easily interact with the b
 
 ## Storing Wallet Priate Keys
 Never push Wallet Private Keys on GIT!!<br>
-A file called ```wallet-private-keys.json``` must be created and the Keys must be stored like this: ```[ "KEY1", "KEY2", "KEY3" ]```.
+A file called ```wallet-private-keys.json``` must be created and the Keys must be stored like this: 
+```javascript
+[
+    {
+        "walletAddress": "0x1FE78ae103e965D83Be62B3...",
+        "walletPrivateKey": "e58999c40f8f07dc0d78234dfe1..."
+    }
+]
+```
 
 
 ## Technologies used
