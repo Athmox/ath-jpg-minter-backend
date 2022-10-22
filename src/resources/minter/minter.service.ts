@@ -12,8 +12,12 @@ class MinterService {
     // Elias Node MAINNET
     // alchemyProvider = new providers.WebSocketProvider("wss://eth-mainnet.alchemyapi.io/v2/Il9ArCAii0Je4em_h86S98925ApXnqeS");
 
-    // Localhost
-    web3Provider = new Web3(new Web3.providers.IpcProvider(`/var/lib/geth/geth.ipc`, require('net')));
+    // IPC
+    // sometimes it disconnected for no reason...
+    // web3Provider = new Web3(new Web3.providers.IpcProvider(`/var/lib/geth/geth.ipc`, require('net')));
+    
+    // Websockets
+    web3Provider = new Web3(new Web3.providers.WebsocketProvider(`ws://localhost:10000`, require('net')));
 
     public async stopListener() {
         this.web3Provider.eth.clearSubscriptions(function (error, result) {
@@ -57,6 +61,8 @@ class MinterService {
                             }
                         });
 
+                        console.log("Cleared Subsriptions", new Date())
+
                         const maxPriorityFeePerGas = fullTransaction.maxPriorityFeePerGas;
                         const maxFeePerGas = fullTransaction.maxFeePerGas;
 
@@ -94,17 +100,30 @@ class MinterService {
                 maxPriorityFeePerGas: maxPriorityFeePerGas,
                 maxFeePerGas: maxFeePerGas
             }, wallet.walletPrivateKey
-            );
-            /* maxPriorityFeePerGas: maxPriorityFeePerGas,
-            maxFeePerGas: maxFeePerGas, */
+        );
+
+        // https://ethereum.stackexchange.com/questions/38034/using-sendtransaction-in-web3-js
+        // unsigned tx schicken mit web3Provider.eth.getAccouts[0] 
+ 
+        /* const signedTransaction = await this.web3Provider.eth.sendTransaction(
+            {
+                from: wallet.walletAddress,
+                to: mintData.contractAddress,
+                data: mintData.mintFunctionHex,
+                value: this.web3Provider.utils.toWei(mintData.price, 'ether'),
+                gas: mintData.gasLimit,
+                maxPriorityFeePerGas: maxPriorityFeePerGas,
+                maxFeePerGas: maxFeePerGas
+            }
+        ); */
 
         if (typeof signedTransaction.rawTransaction != 'string') {
             throw new Error("Could not sign tx. Aborting...");
-        }
+        } 
 
         console.log("Tx signed", wallet.walletAddress, new Date());
 
-        console.log("Sending tx... Waiting for receipt...", wallet.walletAddress, new Date());
+        console.log("Sending tx... Waiting for receipt...", wallet.walletAddress, new Date()); 
 
         const receipt = await this.web3Provider.eth.sendSignedTransaction(signedTransaction.rawTransaction);
 
@@ -113,7 +132,7 @@ class MinterService {
             console.log(receipt);
         } else {
             console.log("There was an error with the transaction...", wallet.walletAddress, new Date());
-        }
+        } 
 
         return Promise.resolve();
     }
