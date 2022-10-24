@@ -47,19 +47,18 @@ class MinterService {
                 }
             }).on("data", (txHash) => {
 
+                let txHashReceivedAt = new Date();
+
                 this.web3Provider.eth.getTransaction(txHash).then(fullTransaction => {
 
                     if (fullTransaction?.to === mintData.contractAddress
                         && fullTransaction?.from === mintData.contractOwnerAddress
                         && fullTransaction?.input === mintData.enableMintingMethodHex) {
 
-                        console.log(fullTransaction, new Date());
+                        console.log("Transaction Hash Received", txHashReceivedAt);
+                        console.log("Dev Transaction Received", new Date());
 
-                        this.web3Provider.eth.clearSubscriptions(function (error, result) {
-                            if (error) {
-                                console.log(error);
-                            }
-                        });
+                        this.clearSubcriptions();
 
                         console.log("Cleared Subsriptions", new Date())
 
@@ -77,9 +76,18 @@ class MinterService {
                 });
             });
         } catch (error) {
+            console.error("Maybe you forgot to import and ulock the wallets in geth?")
             console.log(error);
         }
     }
+
+    private async clearSubcriptions(){
+        this.web3Provider.eth.clearSubscriptions(function (error, result) {
+            if (error) {
+                console.log(error);
+            }
+        });
+    } 
 
     private async sendTransactions(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallets: WalletData[]) {
         for (let wallet of wallets) {
@@ -89,9 +97,9 @@ class MinterService {
 
     private async sendTransaction(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallet: WalletData) {
 
-        console.log("Start signing tx", wallet.walletAddress, new Date());
+        console.log("Start sending tx", wallet.walletAddress, new Date());
 
-        const signedTransaction = await this.web3Provider.eth.accounts.signTransaction(
+        /* const signedTransaction = await this.web3Provider.eth.accounts.signTransaction(
             {
                 to: mintData.contractAddress,
                 data: mintData.mintFunctionHex,
@@ -100,12 +108,12 @@ class MinterService {
                 maxPriorityFeePerGas: maxPriorityFeePerGas,
                 maxFeePerGas: maxFeePerGas
             }, wallet.walletPrivateKey
-        );
+        ); */
 
         // https://ethereum.stackexchange.com/questions/38034/using-sendtransaction-in-web3-js
         // unsigned tx schicken mit web3Provider.eth.getAccouts[0] 
  
-        /* const signedTransaction = await this.web3Provider.eth.sendTransaction(
+        const transactionReceipt = await this.web3Provider.eth.sendTransaction(
             {
                 from: wallet.walletAddress,
                 to: mintData.contractAddress,
@@ -115,9 +123,9 @@ class MinterService {
                 maxPriorityFeePerGas: maxPriorityFeePerGas,
                 maxFeePerGas: maxFeePerGas
             }
-        ); */
+        );
 
-        if (typeof signedTransaction.rawTransaction != 'string') {
+        /* if (typeof signedTransaction.rawTransaction != 'string') {
             throw new Error("Could not sign tx. Aborting...");
         } 
 
@@ -125,11 +133,10 @@ class MinterService {
 
         console.log("Sending tx... Waiting for receipt...", wallet.walletAddress, new Date()); 
 
-        const receipt = await this.web3Provider.eth.sendSignedTransaction(signedTransaction.rawTransaction);
+        const receipt = await this.web3Provider.eth.sendSignedTransaction(signedTransaction.rawTransaction); */
 
-        if (receipt) {
+        if (transactionReceipt) {
             console.log("Transaction was a success.", wallet.walletAddress, new Date());
-            console.log(receipt);
         } else {
             console.log("There was an error with the transaction...", wallet.walletAddress, new Date());
         } 
