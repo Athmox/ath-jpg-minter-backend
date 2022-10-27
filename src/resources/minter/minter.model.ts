@@ -5,4 +5,5 @@ export interface MintData {
     price: string,
     gasLimit: string,
     enableMintingMethodHex: string
+    test: boolean;
 }

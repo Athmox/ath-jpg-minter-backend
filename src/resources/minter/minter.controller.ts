@@ -45,7 +45,7 @@ export class MinterController implements Controller {
         next: NextFunction
     ): Promise<Response | void> => {
         try {
-            const { contractAddress, contractOwnerAddress, mintFunctionHex, price, gasLimit, enableMintingMethodHex } = req.body;
+            const { contractAddress, contractOwnerAddress, mintFunctionHex, price, gasLimit, enableMintingMethodHex, test } = req.body;
 
             if (!contractAddress || !contractOwnerAddress || !mintFunctionHex || !price || !gasLimit || !enableMintingMethodHex) {
 
@@ -58,7 +58,8 @@ export class MinterController implements Controller {
                     mintFunctionHex,
                     price,
                     gasLimit,
-                    enableMintingMethodHex
+                    enableMintingMethodHex,
+                    test
                 }
 
                 this.minterService.mintNFT(mintData);

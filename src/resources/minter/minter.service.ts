@@ -51,9 +51,13 @@ class MinterService {
 
                 this.web3Provider.eth.getTransaction(txHash).then(fullTransaction => {
 
+                    // TODO:
+                    // anstatt dass der minting-methoden-hex 1:1 mit dem input der tx übereinstimmen muss auf contains umändern.
+                    // es muss nur die methode übereinstimmen der rest ist egal
+                    // tx zum testen: 0x55003c2ed30db729596413af90d1df84b5d9eb21b1cdc19a256a9558398334bd
                     if (fullTransaction?.to === mintData.contractAddress
                         && fullTransaction?.from === mintData.contractOwnerAddress
-                        && fullTransaction?.input === mintData.enableMintingMethodHex) {
+                        && fullTransaction?.input.includes(mintData.enableMintingMethodHex)) {
 
                         console.log("Transaction Hash Received", txHashReceivedAt);
                         console.log("Dev Transaction Received", new Date());
@@ -71,7 +75,11 @@ class MinterService {
                             throw new Error("Max-Fee-Per-Gas could not be extracted. Aborting...");
                         }
 
-                        this.sendTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets);
+                        if(mintData.test){
+                            this.sendTestTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets)
+                        } else{
+                            this.sendTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets);
+                        }
                     }
                 });
             });
@@ -95,23 +103,15 @@ class MinterService {
         }
     }
 
+    private async sendTestTransactions(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallets: WalletData[]) {
+        for (let wallet of wallets) {
+            this.sendTestTransaction(mintData, maxPriorityFeePerGas, maxFeePerGas, wallet);
+        }
+    }
+
     private async sendTransaction(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallet: WalletData) {
 
         console.log("Start sending tx", wallet.walletAddress, new Date());
-
-        /* const signedTransaction = await this.web3Provider.eth.accounts.signTransaction(
-            {
-                to: mintData.contractAddress,
-                data: mintData.mintFunctionHex,
-                value: this.web3Provider.utils.toWei(mintData.price, 'ether'),
-                gas: mintData.gasLimit,
-                maxPriorityFeePerGas: maxPriorityFeePerGas,
-                maxFeePerGas: maxFeePerGas
-            }, wallet.walletPrivateKey
-        ); */
-
-        // https://ethereum.stackexchange.com/questions/38034/using-sendtransaction-in-web3-js
-        // unsigned tx schicken mit web3Provider.eth.getAccouts[0] 
  
         const transactionReceipt = await this.web3Provider.eth.sendTransaction(
             {
@@ -125,20 +125,34 @@ class MinterService {
             }
         );
 
-        /* if (typeof signedTransaction.rawTransaction != 'string') {
-            throw new Error("Could not sign tx. Aborting...");
-        } 
-
-        console.log("Tx signed", wallet.walletAddress, new Date());
-
-        console.log("Sending tx... Waiting for receipt...", wallet.walletAddress, new Date()); 
-
-        const receipt = await this.web3Provider.eth.sendSignedTransaction(signedTransaction.rawTransaction); */
-
         if (transactionReceipt) {
             console.log("Transaction was a success.", wallet.walletAddress, new Date());
         } else {
             console.log("There was an error with the transaction...", wallet.walletAddress, new Date());
+        } 
+
+        return Promise.resolve();
+    }
+
+    private async sendTestTransaction(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallet: WalletData) {
+
+        console.log("Start sending test tx", wallet.walletAddress, new Date());
+ 
+        const transactionReceipt = await this.web3Provider.eth.sendTransaction(
+            {
+                from: wallet.walletAddress,
+                to: wallet.walletAddress,
+                value: this.web3Provider.utils.toWei(mintData.price, 'ether'),
+                gas: mintData.gasLimit,
+                maxPriorityFeePerGas: maxPriorityFeePerGas,
+                maxFeePerGas: maxFeePerGas
+            }
+        );
+
+        if (transactionReceipt) {
+            console.log("Test Transaction was a success.", wallet.walletAddress, new Date());
+        } else {
+            console.log("There was an error with the test transaction...", wallet.walletAddress, new Date());
         } 
 
         return Promise.resolve();
