@@ -17,19 +17,35 @@ class MinterService {
     // web3Provider = new Web3(new Web3.providers.IpcProvider(`/var/lib/geth/geth.ipc`, require('net')));
     
     // Websockets
-    web3Provider = new Web3(new Web3.providers.WebsocketProvider(`ws://localhost:10000`, require('net')));
+    web3ProviderUrl = `ws://localhost:10000`;
+
+    allWeb3Providers: Web3[]  = []; 
 
     public async stopListener() {
-        this.web3Provider.eth.clearSubscriptions(function (error, result) {
-            if (error) {
-                console.log(error);
-            }
-        });
+        for(let web3Provider of this.allWeb3Providers){
+            web3Provider.eth.clearSubscriptions(function (error, result) {
+                if (error) {
+                    console.log(error);
+                }
+            });
+
+            const indexOfObject = this.allWeb3Providers.findIndex((provider) => {
+                return provider === web3Provider;
+            });
+    
+            if (indexOfObject !== -1){
+                this.allWeb3Providers.splice(indexOfObject, 1);
+            } 
+        } 
     }
 
     public async mintNFT(mintData: MintData) {
 
         try {
+
+            if(mintData.test) {
+                console.log("TEST MODE IS ACTIVE!!")
+            } 
 
             console.log("Start creating wallets", new Date().toLocaleTimeString());
 
@@ -41,7 +57,11 @@ class MinterService {
 
             console.log("Wallets created. Starting with listening...", new Date().toLocaleTimeString());
 
-            this.web3Provider.eth.subscribe('pendingTransactions', function (error, result) {
+            const web3Provider = new Web3(new Web3.providers.WebsocketProvider(this.web3ProviderUrl, require('net')));
+
+            this.allWeb3Providers.push(web3Provider);
+
+            web3Provider.eth.subscribe('pendingTransactions', function (error, result) {
                 if (error) {
                     console.log(error);
                 }
@@ -49,7 +69,7 @@ class MinterService {
 
                 let txHashReceivedAt = new Date();
 
-                this.web3Provider.eth.getTransaction(txHash).then(fullTransaction => {
+                web3Provider.eth.getTransaction(txHash).then(async fullTransaction => {
 
                     // TODO:
                     // anstatt dass der minting-methoden-hex 1:1 mit dem input der tx übereinstimmen muss auf contains umändern.
@@ -62,10 +82,6 @@ class MinterService {
                         console.log("Transaction Hash Received", txHashReceivedAt);
                         console.log("Dev Transaction Received", new Date());
 
-                        this.clearSubcriptions();
-
-                        console.log("Cleared Subsriptions", new Date())
-
                         const maxPriorityFeePerGas = fullTransaction.maxPriorityFeePerGas;
                         const maxFeePerGas = fullTransaction.maxFeePerGas;
 
@@ -76,10 +92,12 @@ class MinterService {
                         }
 
                         if(mintData.test){
-                            this.sendTestTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets)
+                            await this.sendTestTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets, web3Provider)
                         } else{
-                            this.sendTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets);
+                            await this.sendTransactions(mintData, maxPriorityFeePerGas, maxFeePerGas, wallets, web3Provider);
                         }
+
+                        setTimeout(() => this.clearSubcriptions(web3Provider), 500);
                     }
                 });
             });
@@ -89,36 +107,48 @@ class MinterService {
         }
     }
 
-    private async clearSubcriptions(){
-        this.web3Provider.eth.clearSubscriptions(function (error, result) {
+    private async clearSubcriptions(web3Provider: Web3){
+        await web3Provider.eth.clearSubscriptions(function (error, result) {
             if (error) {
                 console.log(error);
             }
         });
+        
+        const indexOfObject = this.allWeb3Providers.findIndex((provider) => {
+            return provider === web3Provider;
+        });
+
+        if (indexOfObject !== -1){
+            this.allWeb3Providers.splice(indexOfObject, 1);
+        } 
+
+        console.log("Cleared Subsriptions", new Date())
     } 
 
-    private async sendTransactions(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallets: WalletData[]) {
+    private async sendTransactions(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallets: WalletData[], web3Provider: Web3): Promise<void> {
         for (let wallet of wallets) {
-            this.sendTransaction(mintData, maxPriorityFeePerGas, maxFeePerGas, wallet);
+            this.sendTransaction(mintData, maxPriorityFeePerGas, maxFeePerGas, wallet, web3Provider);
         }
+        return Promise.resolve();
     }
 
-    private async sendTestTransactions(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallets: WalletData[]) {
+    private async sendTestTransactions(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallets: WalletData[], web3Provider: Web3): Promise<void> {
         for (let wallet of wallets) {
-            this.sendTestTransaction(mintData, maxPriorityFeePerGas, maxFeePerGas, wallet);
+            this.sendTestTransaction(mintData, maxPriorityFeePerGas, maxFeePerGas, wallet, web3Provider);
         }
+        return Promise.resolve();
     }
 
-    private async sendTransaction(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallet: WalletData) {
+    private async sendTransaction(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallet: WalletData, web3Provider: Web3) {
 
         console.log("Start sending tx", wallet.walletAddress, new Date());
  
-        const transactionReceipt = await this.web3Provider.eth.sendTransaction(
+        const transactionReceipt = await web3Provider.eth.sendTransaction(
             {
                 from: wallet.walletAddress,
                 to: mintData.contractAddress,
                 data: mintData.mintFunctionHex,
-                value: this.web3Provider.utils.toWei(mintData.price, 'ether'),
+                value: web3Provider.utils.toWei(mintData.price, 'ether'),
                 gas: mintData.gasLimit,
                 maxPriorityFeePerGas: maxPriorityFeePerGas,
                 maxFeePerGas: maxFeePerGas
@@ -134,15 +164,15 @@ class MinterService {
         return Promise.resolve();
     }
 
-    private async sendTestTransaction(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallet: WalletData) {
+    private async sendTestTransaction(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallet: WalletData, web3Provider: Web3) {
 
         console.log("Start sending test tx", wallet.walletAddress, new Date());
  
-        const transactionReceipt = await this.web3Provider.eth.sendTransaction(
+        const transactionReceipt = await web3Provider.eth.sendTransaction(
             {
                 from: wallet.walletAddress,
                 to: wallet.walletAddress,
-                value: this.web3Provider.utils.toWei(mintData.price, 'ether'),
+                value: web3Provider.utils.toWei(mintData.price, 'ether'),
                 gas: mintData.gasLimit,
                 maxPriorityFeePerGas: maxPriorityFeePerGas,
                 maxFeePerGas: maxFeePerGas
