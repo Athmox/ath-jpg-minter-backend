@@ -1,9 +1,18 @@
 export interface MintData {
     contractAddress: string,
-    contractOwnerAddress: string,
     mintFunctionHex: string,
     price: string,
     gasLimit: string,
-    enableMintingMethodHex: string
     test: boolean;
+}
+
+export interface MintDataFlipState extends MintData {
+    contractOwnerAddress: string,
+    enableMintingMethodHex: string;
+}
+
+export interface MintDataSpecificTime extends MintData {
+    maxPriorityFeePerGas: number,
+    maxFeePerGas: number,
+    mintDateInMillis: number;
 }

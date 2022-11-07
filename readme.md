@@ -10,7 +10,8 @@ A file called ```wallet-private-keys.json``` must be created and the Keys must b
 [
     {
         "walletAddress": "0x1FE78ae103e965D83Be62B3...",
-        "walletPrivateKey": "e58999c40f8f07dc0d78234dfe1..."
+        "walletPrivateKey": "e58999c40f8f07dc0d78234dfe1...",
+        "useForMint": true
     }
 ]
 ```
@@ -18,7 +19,7 @@ A file called ```wallet-private-keys.json``` must be created and the Keys must b
 
 ## Technologies used
 - ExpressJS
-- nodeJS
+- nodeJS v16.17.0
 
 ## Starting MongoDB on MAC OS
 It often happens that MongoDB does not get started with startup. For this reason we have to start it manually.
