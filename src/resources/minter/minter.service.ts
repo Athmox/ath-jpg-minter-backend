@@ -63,6 +63,12 @@ class MinterService {
                 console.log("TEST MODE IS ACTIVE!!")
             }
 
+            if (Number(mintDataSpecificTime.maxFeePerGas) >= 200 ||
+                Number(mintDataSpecificTime.maxPriorityFeePerGas) >= 200) {
+
+                console.log("The tx seems to need more Gas than usual. Be sure to write maxFeePerGas and maxPriorityFeePerGas in GWEI format!");
+            }
+
             const wallets = this.getWalletsForMint();
 
             console.log("Mint will start at UTC Time", new Date(Number(mintDataSpecificTime.mintDateInMillis)));
@@ -79,10 +85,20 @@ class MinterService {
 
             setTimeout(() => {
                 console.log("Time reached, start minting", new Date());
-                if(mintDataSpecificTime.test){
-                    this.sendTestTransactions(mintDataSpecificTime, mintDataSpecificTime.maxPriorityFeePerGas.toString(), mintDataSpecificTime.maxFeePerGas.toString(), wallets, web3Provider)
-                } else{
-                    this.sendTransactions(mintDataSpecificTime, mintDataSpecificTime.maxPriorityFeePerGas.toString(), mintDataSpecificTime.maxFeePerGas.toString(), wallets, web3Provider);
+                if (mintDataSpecificTime.test) {
+                    this.sendTestTransactions(
+                        mintDataSpecificTime,
+                        web3Provider.utils.toWei(mintDataSpecificTime.maxPriorityFeePerGas.toString(), 'Gwei'),
+                        web3Provider.utils.toWei(mintDataSpecificTime.maxFeePerGas.toString(), 'Gwei'),
+                        wallets,
+                        web3Provider)
+                } else {
+                    this.sendTransactions(
+                        mintDataSpecificTime,
+                        mintDataSpecificTime.maxPriorityFeePerGas.toString(),
+                        mintDataSpecificTime.maxFeePerGas.toString(),
+                        wallets,
+                        web3Provider);
                 }
             }, mintDataSpecificTime.mintDateInMillis - new Date().getTime())
 

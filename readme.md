@@ -16,6 +16,8 @@ A file called ```wallet-private-keys.json``` must be created and the Keys must b
 ]
 ```
 
+## Site to convert Date to time in millis
+(https://currentmillis.com/)[https://currentmillis.com/]
 
 ## Technologies used
 - ExpressJS
