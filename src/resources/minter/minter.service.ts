@@ -4,7 +4,7 @@ import Web3 from 'web3';
 
 export interface WalletData {
     walletAddress: string,
-    walletPrivateKey: string,
+    walletPrivateKey?: string,
     useForMint: boolean
 }
 
