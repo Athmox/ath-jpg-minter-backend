@@ -51,7 +51,7 @@ export class MinterController implements Controller {
         try {
             const { contractAddress, contractOwnerAddress, mintFunctionHex, price, gasLimit, enableMintingMethodHex, test } = req.body;
 
-            if (!contractAddress || !contractOwnerAddress || !mintFunctionHex || !price || !gasLimit || !enableMintingMethodHex || !test) {
+            if (!contractAddress || !contractOwnerAddress || !mintFunctionHex || !price || !gasLimit || !enableMintingMethodHex) {
 
                 res.status(400).json({ errorMessage: "Cannot start listening, because not all parameters are set!" });
             } else {
