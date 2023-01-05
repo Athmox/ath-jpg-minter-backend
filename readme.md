@@ -3,6 +3,9 @@ Backend part of Minter-Project.
 This part is responsible for the minting, storing the wallets.
 Later on a frontend part is planned, where a user can easily interact with the backend. For now interaction with the backend is only possible via postman.
 
+## Start Minter
+```npm run dev```
+
 ## Storing Wallet Priate Keys
 Never push Wallet Private Keys on GIT!!<br>
 A file called ```wallet-private-keys.json``` must be created and the Keys must be stored like this: 
