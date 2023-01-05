@@ -6,13 +6,20 @@ export interface MintData {
     test: boolean;
 }
 
+export interface MintDataWithGasFees extends MintData {
+    maxPriorityFeePerGas: number,
+    maxFeePerGas: number;
+} 
+
 export interface MintDataFlipState extends MintData {
     contractOwnerAddress: string,
     enableMintingMethodHex: string;
 }
 
-export interface MintDataSpecificTime extends MintData {
-    maxPriorityFeePerGas: number,
-    maxFeePerGas: number,
+export interface MintDataSpecificTime extends MintDataWithGasFees {
     mintDateInMillis: number;
 }
+
+export interface MintDataInstant extends MintDataWithGasFees{
+
+} 

@@ -1,10 +1,11 @@
-import { MintData, MintDataFlipState, MintDataSpecificTime } from './minter.model';
+import { MintData, MintDataFlipState, MintDataInstant, MintDataSpecificTime } from './minter.model';
 import walletPrivateKeysJson from '../../../wallet-private-keys.json';
 import Web3 from 'web3';
 
 export interface WalletData {
     walletAddress: string,
-    walletPrivateKey?: string,
+    walletPrivateKey: string,
+    walletPassphrase: string,
     useForMint: boolean
 }
 
@@ -103,6 +104,47 @@ class MinterService {
             }, mintDataSpecificTime.mintDateInMillis - new Date().getTime())
 
 
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    public async mintNFTInstant(mintData: MintDataInstant) {
+
+        try {
+
+            if (mintData.test) {
+                console.log("TEST MODE IS ACTIVE!!")
+            }
+
+            if (Number(mintData.maxFeePerGas) >= 200 ||
+                Number(mintData.maxPriorityFeePerGas) >= 200) {
+
+                console.log("The tx seems to need more Gas than usual. Be sure to write maxFeePerGas and maxPriorityFeePerGas in GWEI format!");
+            }
+
+            const wallets = this.getWalletsForMint();
+
+            const web3Provider = new Web3(new Web3.providers.WebsocketProvider(this.web3ProviderUrl, require('net')));
+
+            this.allWeb3Providers.push(web3Provider);
+
+            if (mintData.test) {
+                this.sendTestTransactions(
+                    mintData,
+                    web3Provider.utils.toWei(mintData.maxPriorityFeePerGas.toString(), 'Gwei'),
+                    web3Provider.utils.toWei(mintData.maxFeePerGas.toString(), 'Gwei'),
+                    wallets,
+                    web3Provider)
+            } else {
+                this.sendTransactions(
+                    mintData,
+                    mintData.maxPriorityFeePerGas.toString(),
+                    mintData.maxFeePerGas.toString(),
+                    wallets,
+                    web3Provider);
+            }
+            
         } catch (error) {
             console.log(error);
         }
@@ -242,6 +284,50 @@ class MinterService {
         }
 
         return Promise.resolve();
+    }
+
+    public async bulkImportAccountWithRawKey() {
+
+        const web3Provider = new Web3(new Web3.providers.WebsocketProvider(this.web3ProviderUrl, require('net')));
+
+        this.allWeb3Providers.push(web3Provider);
+
+        const allWallets: WalletData[] = walletPrivateKeysJson;
+
+        for(let wallet of allWallets){
+            if(wallet.useForMint){
+                await this.importAccountWithRawKey(web3Provider, wallet.walletPrivateKey, wallet.walletPassphrase);
+            } 
+        } 
+
+        this.clearSubcriptions(web3Provider);
+    }
+    
+    private async importAccountWithRawKey(web3Provider: Web3, walletPrivateKey: string, walletPassphrase: string) {
+        
+        await web3Provider.eth.personal.importRawKey(walletPrivateKey, walletPassphrase).then(res => console.log("Wallet imported", res));
+    }
+    
+    public async bulkUnlockAccount() {
+
+        const web3Provider = new Web3(new Web3.providers.WebsocketProvider(this.web3ProviderUrl, require('net')));
+
+        this.allWeb3Providers.push(web3Provider);
+
+        const allWallets: WalletData[] = walletPrivateKeysJson;
+
+        for(let wallet of allWallets){
+            if(wallet.useForMint){
+                await this.unlockAccount(web3Provider, wallet.walletAddress, wallet.walletPassphrase);
+            } 
+        } 
+
+        this.clearSubcriptions(web3Provider);
+    }
+
+    private async unlockAccount(web3Provider: Web3, walletAddress: string, walletPassphrase: string) {
+
+        await web3Provider.eth.personal.unlockAccount(walletAddress, walletPassphrase, 0).then(res => console.log("Wallet unlocked", walletAddress));
     }
 
 }

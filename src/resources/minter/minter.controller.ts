@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import Controller from '@/utils/interfaces/controller.interface';
 import HttpException from '@/utils/exceptions/http.exception';
 import MinterService from './minter.service';
-import { MintDataFlipState, MintDataSpecificTime } from './minter.model';
+import { MintDataFlipState, MintDataInstant, MintDataSpecificTime } from './minter.model';
 
 export class MinterController implements Controller {
     public path = '/minter';
@@ -25,7 +25,19 @@ export class MinterController implements Controller {
         this.router.post(
             `${this.path}/mintNFTAtSpecificTimeInMillis`,
             this.mintNFTAtSpecificTimeInMillis
-        )
+        );
+        this.router.post(
+            `${this.path}/mintNFTInstant`,
+            this.mintNFTInstant
+        );
+        this.router.get(
+            `${this.path}/bulkImportAccountWithRawKey`,
+            this.bulkImportAccountWithRawKey
+        );
+        this.router.get(
+            `${this.path}/bulkUnlockAccount`,
+            this.bulkUnlockAccount
+        );
     }
 
     private stopListener = async (
@@ -103,6 +115,70 @@ export class MinterController implements Controller {
 
                 res.status(201).json({ startedMintingProcessAtSpecificTime: true });
             }
+        } catch (error) {
+            next(new HttpException(400, 'Cannot create post'));
+        }
+    };
+
+    private mintNFTInstant = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<Response | void> => {
+        try {
+            const { contractAddress, mintFunctionHex, price, gasLimit, test, maxPriorityFeePerGas, maxFeePerGas } = req.body;
+
+            if (!contractAddress || !mintFunctionHex || !price || !gasLimit || !test || !maxPriorityFeePerGas || !maxFeePerGas ) {
+
+                res.status(400).json({ errorMessage: "Cannot start minting process at specific time, because not all parameters are set!" });
+            } else {
+
+                const mintData: MintDataInstant = {
+                    contractAddress,
+                    mintFunctionHex,
+                    price,
+                    gasLimit,
+                    test,
+                    maxPriorityFeePerGas,
+                    maxFeePerGas
+                }
+
+                this.minterService.mintNFTInstant(mintData);
+
+                res.status(201).json({ startedMintingProcessInstant: true });
+            }
+        } catch (error) {
+            next(new HttpException(400, 'Cannot create post'));
+        }
+    };
+
+    private bulkImportAccountWithRawKey = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<Response | void> => {
+        try {
+
+            this.minterService.bulkImportAccountWithRawKey();
+
+            res.status(201).json({ bulkImportAccountWithRawKey: true });
+
+        } catch (error) {
+            next(new HttpException(400, 'Cannot create post'));
+        }
+    };
+
+    private bulkUnlockAccount = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<Response | void> => {
+        try {
+
+            this.minterService.bulkUnlockAccount();
+
+            res.status(201).json({ bulkUnlockAccount: true });
+
         } catch (error) {
             next(new HttpException(400, 'Cannot create post'));
         }
