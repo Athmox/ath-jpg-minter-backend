@@ -6,6 +6,8 @@ export interface WalletData {
     walletAddress: string,
     walletPrivateKey: string,
     walletPassphrase: string,
+    methodHex: string,
+    value: string,
     useForMint: boolean
 }
 
@@ -96,8 +98,8 @@ class MinterService {
                 } else {
                     this.sendTransactions(
                         mintDataSpecificTime,
-                        mintDataSpecificTime.maxPriorityFeePerGas.toString(),
-                        mintDataSpecificTime.maxFeePerGas.toString(),
+                        web3Provider.utils.toWei(mintDataSpecificTime.maxPriorityFeePerGas.toString(), 'Gwei'),
+                        web3Provider.utils.toWei(mintDataSpecificTime.maxFeePerGas.toString(), 'Gwei'),
                         wallets,
                         web3Provider);
                 }
@@ -139,8 +141,8 @@ class MinterService {
             } else {
                 this.sendTransactions(
                     mintData,
-                    mintData.maxPriorityFeePerGas.toString(),
-                    mintData.maxFeePerGas.toString(),
+                    web3Provider.utils.toWei(mintData.maxPriorityFeePerGas.toString(), 'Gwei'),
+                    web3Provider.utils.toWei(mintData.maxFeePerGas.toString(), 'Gwei'),
                     wallets,
                     web3Provider);
             }
@@ -240,6 +242,19 @@ class MinterService {
     private async sendTransaction(mintData: MintData, maxPriorityFeePerGas: string, maxFeePerGas: string, wallet: WalletData, web3Provider: Web3) {
 
         console.log("Start sending tx", wallet.walletAddress, new Date());
+
+        // when every wallet needs to perform a different task
+        /* const transactionReceipt = await web3Provider.eth.sendTransaction(
+            {
+                from: wallet.walletAddress,
+                to: mintData.contractAddress,
+                data: wallet.methodHex,
+                value: web3Provider.utils.toWei(wallet.value, 'ether'),
+                gas: mintData.gasLimit,
+                maxPriorityFeePerGas: maxPriorityFeePerGas,
+                maxFeePerGas: maxFeePerGas
+            }
+        ); */
 
         const transactionReceipt = await web3Provider.eth.sendTransaction(
             {

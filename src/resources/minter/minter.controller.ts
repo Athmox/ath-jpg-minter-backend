@@ -128,7 +128,7 @@ export class MinterController implements Controller {
         try {
             const { contractAddress, mintFunctionHex, price, gasLimit, test, maxPriorityFeePerGas, maxFeePerGas } = req.body;
 
-            if (!contractAddress || !mintFunctionHex || !price || !gasLimit || !test || !maxPriorityFeePerGas || !maxFeePerGas ) {
+            if (!contractAddress || !mintFunctionHex || !price || !gasLimit || !maxPriorityFeePerGas || !maxFeePerGas ) {
 
                 res.status(400).json({ errorMessage: "Cannot start minting process at specific time, because not all parameters are set!" });
             } else {
