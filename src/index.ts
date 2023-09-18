@@ -2,14 +2,12 @@ import 'dotenv/config';
 import 'module-alias/register';
 import validateEnv from '@/utils/validateEnv';
 import App from './app';
-import PostController from '@/resources/post/post.controller';
-import UserController from '@/resources/user/user.controller';
 import { MinterController } from './resources/minter/minter.controller';
 
 validateEnv();
 
 const app = new App(
-    [new PostController(), new UserController(), new MinterController()],
+    [new MinterController()],
     Number(process.env.PORT)
 );
 

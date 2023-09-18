@@ -14,6 +14,9 @@ A file called ```wallet-private-keys.json``` must be created and the Keys must b
     {
         "walletAddress": "0x1FE78ae103e965D83Be62B3...",
         "walletPrivateKey": "e58999c40f8f07dc0d78234dfe1...",
+        "walletPassphrase": "test",
+        "methodHex": "0x7abqw3",
+        "value": "0.1",
         "useForMint": true
     }
 ]
